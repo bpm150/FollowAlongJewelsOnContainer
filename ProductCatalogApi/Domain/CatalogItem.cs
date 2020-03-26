@@ -56,7 +56,7 @@ namespace ProductCatalogApi.Domain
         // Microsoft.EntityFrameworkCore.SqlServer
         // Microsoft.EntityFrameworkCore.Tools (tooling around them. there are some powershell scripts that we are going to go run)
 
-        // Next (tomorrow) is to write the were, what and how:
+        // Next is to write the were, what and how:
 
         // For Entity Framework, we need to provide these three things:
         //    a) where to create tables
@@ -67,6 +67,10 @@ namespace ProductCatalogApi.Domain
         //        some columns to be of a certain size
         //    (rules about how table to be created)
 
-        // End Class #9: Sun 2-29-20
+        // End Class #9: Sat 2-29-20
+        // TO: CatalogContext.cs
+
+
+
     }
 }

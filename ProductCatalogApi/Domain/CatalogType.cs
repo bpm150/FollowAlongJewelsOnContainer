@@ -8,7 +8,7 @@ namespace ProductCatalogApi.Domain
     // Ring, Necklace, etc.
     public class CatalogType
     {
-        public int MyProperty { get; set; }
+        public int Id { get; set; }
 
         public string Type { get; set; }
     }

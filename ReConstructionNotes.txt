@@ -1,0 +1,333 @@
+Class #9 2-29-20
+
+1) Create models
+including "virtual" dependency properties (for Entity Framework, right?)
+these become the foreign keys for the database tables, right?
+
+CatalogBrand
+
+CatalogType
+
+CatalogItem
+    public virtual CatalogType  CatalogType  { get; set; }
+    public virtual CatalogBrand CatalogBrand { get; set; }
+                    ^ class type  ^ property name
+
+2) Install Entity Framework Core Nuget packages:
+Manage nuget packages into this ProductCatalogApi project
+// Install four packages:
+// Microsoft.EntityFrameworkCore (works with any data store)
+// Microsoft.EntityFrameworkCore.Relational (we will be using relational -sql- database)
+// Microsoft.EntityFrameworkCore.SqlServer
+// Microsoft.EntityFrameworkCore.Tools
+
+
+
+
+---
+
+Class #10 3-1-20
+
+Ahead of using docker, set up in sql express using vs (for testing and getting set up)
+Talk to local db before containerizing to docker container
+
+        // Write the were, what and how:
+
+        // For Entity Framework, we need to provide these three things:
+        //    a) where to create tables
+        //    b) what code should be converted to tables
+        //    c) how: when you create them as tables, how to configure them
+        //        some columns to be primary key
+        //        some columns to be required
+        //        some columns to be of a certain size
+        //    (rules about how table to be created)
+
+
+? Tables
+CatalogContext.cs in Data folder of project
+
+---
+WHERE
+*** Dependency Injection *** Is this "Where"? (Where to create the tables)
+
+Two layers:
+    While developing
+        Isolated
+    While deploying
+        Dependencies injected
+
+Two things to make DI work:
+    a) Classes that have dependencies (such as CatalogContext?)
+        Inherit from DbContext
+            public class CatalogContext : DbContext
+    Specify DbContextOptions (DI parameter) in class constructor:
+            public CatalogContext(DbContextOptions options) {}
+    b) The sending end (Startup.cs)
+        Before microservice starts up
+        Pass these to any constructor that wants it
+
+
+Note that settings values read in by Startup from a json config file
+(prevents needing to recompile and redeploy when something changes)
+
+---
+WHAT
+*** Create DbSet objects *** What (tables to go create)
+
+
+
+Make db table of type each domain class (where to do?)
+    public DbSet<CatalogBrand> CatalogBrands { get; set; }
+    public DbSet<CatalogType> CatalogTypes { get; set; }
+    public DbSet<CatalogItem> CatalogItems { get; set; }
+
+Since you named it CatalogBrand, default name will be CatalogBrands
+
+
+
+
+---
+HOW
+*** On CatalogContext : DbContext class, Override OnModelCreating() ***
+How to create/configure tables
+
+protected override void OnModelCreating(ModelBuilder modelBuilder)
+
+do not call the base DbContext OnModelCreating
+XX BAD NO: base.OnModelCreating(modelBuilder);
+
+
+Now provide methods for EF to call when setting up tables
+pass in set of methods inside a lambda statement
+
+For each table:
+modelBuilder.Entity<CatalogBrand> (e =>
+
+e is of type EntityTypeBuider<CatalogBrand>
+Note that Entity<CatalogBrand> is a method on the modelBuilder object
+rather than a LINQ query.
+That is, modelBuilder is a ModelBuilder object (not a collection of EntityTypeBuilder<CatalogBrand>)
+This signature of the overload we're using is:
+ModelBuilder.Entity<TEntity>(Action<EntityTypeBuilder<TEntity>>)
+Specifically, the method accepts as a parameter one Action<EntityTypeBuilder<TEntity>>
+which can be expressed as a lambda statement (or expression)
+
+Essentially, for the EntityTypeBuider<CatalogBrand>, what commands to execute to set up the table
+
+Set the name of the table (or accept the default of the class type pluralized)
+e.ToTable("CatalogBrands");
+
+Set the property of the class type to be the primary key of the table
+e.Property(b => b.Id)
+B is for brand
+Pass in "A lambda expression representing the property to be configured"
+Do not use the Property method that accepts a string parameter, that will break of the property name in the class changes.
+
+Chain the next call:
+    .IsRequired()
+Make this field required
+
+Chain one more call:
+    .UseHiLo("catalog_brand_hilo");
+Use HiLo technique
+db gives you back a range
+as a client you can pick any number in this range
+Name the constraint so that the constraint can be modified or deleted later
+
+
+
+Set the other property for the table (other, non-primary key)
+e.Property(b => b.Brand)
+    .IsRequired()
+    .HasMaxLength(100);
+For string fields, use appropriate Varchar (variable length) or char (fixed length)
+HasMaxLength is Varchar
+
+CatalogType table setup is similar:
+modelBuilder.Entity<CatalogType>(e =>
+                {
+                    e.ToTable("CatalogTypes");
+                    e.Property(t => t.Id)
+                        .IsRequired()
+                        .UseHiLo("catalog_type_hilo"); // Name the constraint
+                    e.Property(t => t.Type)
+                        .IsRequired()
+                        .HasMaxLength(100);
+                });
+
+
+For CatalogItem,
+            modelBuilder.Entity<CatalogItem>(e =>
+                {
+                    Note that you can name the db table differently than the the class type:
+                    e.ToTable("Catalog");
+                    'c' for catalog in the lambda statements
+                    e.Property(c => c.Id)
+                        .IsRequired()
+                        .UseHiLo("catalog_hilo");
+                    e.Property(c => c.Name)
+                        .IsRequired()
+                        .HasMaxLength(100);
+                    e.Property(c => c.Price)
+                        .IsRequired();
+
+Foreign key relationship
+                    // Three kinds of relationships in the db world:
+                    // 1:1
+                    // 1:M / M:1
+                    // M:M
+
+From the perspective of CatalogItem,
+each CatalogItem has one CatalogType
+                    e.HasOne(c => c.CatalogType)
+                    Declaration for CatalogType on the CatalogItem class:
+                            public virtual CatalogType CatalogType { get; set; }
+                                            ^ member type ^ member name
+                        .WithMany()
+                    Each CatalogType has many CatalogItem
+                        .HasForeignKey(c => c.CatalogTypeId);
+                    Each CatalogItem has a key (a foreign key) to the CatalogType table
+                    Declaration for CatalogTypeId on the CatalogItem class:
+                            public int CatalogTypeId { get; set; }
+
+Same for CatalogBrand:
+                    e.HasOne(c => c.CatalogBrand)
+                        .WithMany()
+                        .HasForeignKey(c => c.CatalogBrandId);
+DO Explicitly create foreign keys in your class types
+If you don't specify a foreign key, you'll get one (a useless one that you can't reference) automatically
+
+DONE configuring the Entity Framework (WHERE, WHAT AND HOW)
+
+
+---
+DI (Dependency Injection)
+
+>>>
+Now go to Startup.cs to set up DI
+https://youtu.be/1k11n8FO_UU?list=PLdbymrfiqF-wmh3VsbxysBsu2O9w6Z3Ks&t=3232
+
+Note constructor for Startup class:
+
+        public Startup(IConfiguration configuration)
+        {
+            Configuration = configuration;
+        }
+
+Go to appsettings.json to set up the objects to be represented by Configuration
+(Everything in this step is for using LocalDb, will not be used once set up with Docker.)
+
+>>>
+// In VS:
+// View > SQL Server Object Explorer
+// Right click on MSSQLLocalDB, Properties
+
+Copy ConnectionString:
+// Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=master;Integrated Security=True;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False
+
+These are key value pairs seperated by semicolons
+
+// Four pieces needed for Connection String:
+// Where:             Data Source=(localdb)\\MSSQLLocalDB
+// Name:              Initial Catalog=CatalogDb < ***IMPORTANT! NOT MASTER!***
+// What security:     Integrated Security=True
+// When to time out:  Connect Timeout=30
+
+Remember to set the Initial Catalog to a value other than master.
+Don't put your personal tables in the master db. That is for keeping track of all tables on your system.
+
+
+>>>
+Put at the very top of appsettings.json (outside of everything)
+
+"Connection String" in double quotes, a colon (:), then the connection string in double quotes, followed by a comma (,)
+
+??? QUESTION: IS A SEMICOLON AFTER THE FINAL ITEM IN THE CONNECTION STRING ALLOWED
+
+  "ConnectionString": "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=CatalogDb;Integrated Security=True;Connect Timeout=30;",
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft": "Warning",
+      "Microsoft.Hosting.Lifetime": "Information"
+    }
+  },
+  "AllowedHosts": "*"
+
+Discard the others.
+
+
+>>>
+Back to Startup.cs
+
+Look at the Startup.ConfigureServices method:
+        public void ConfigureServices(IServiceCollection services)
+Configures your microservices.
+Adds services to the container.
+Called for you by the runtime.
+
+Leave this call, we'll come back to it:
+            services.AddControllers();
+
+Recall that CatalogContext derives from DbContext,
+    public class CatalogContext : DbContext
+Services need a DbContext, specifically a CatalogContext
+
+Startup will create a CatalogContext instance that will connect to your db
+
+
+*** Inject DbContext into your service ***
+
+ Recall the declaration of the constructor for the CatalogContext class:
+    {
+        // Dependency Injection
+        public CatalogContext(DbContextOptions options) : base(options) { }
+
+Register the CatalogContext (the DbContext) as a service in the IServicesCollection (services parameter on ConfigureServices)
+
+services.AddDbContext<CatalogContext>( ... )
+            // IServiceCollection.AddDbContext<CatalogContext>(Action<DbContextOptionsBuilder>)
+
+services.AddDbContext<CatalogContext>(
+    options =>
+    options.UseSqlServer(Configuration["ConnectionString"]));
+
+            //DbContextOptionsBuilder.
+            //          UseSqlServer(String)
+
+   options "Configures the context to connect to a Microsoft SQL Server database."
+   Lookup the ConnectionString that we defined in appsettings.json with the "ConnectionString" key.
+
+            // At this point,
+            // a) My services need a database           services.AddDbContext
+            // b) what kind of database?                <CatalogContext>
+            // c) Startup creates an instance of CatalogContext
+            // d) when it does so, it needs to pass     a DbContextOptionsBuilder  
+            // e) use sql server                        (options => options.UseSqlServer
+            // f) here is the connection string from the config that says where it is
+            //                                      (Configuration["ConnectionString"]));
+
+            // THEN:
+            // DbContextOptions injected into the constructor for CatalogContext
+            // which will in turn pass the options on to the base class (DbContext)
+            // which is when Entity Framework will create the database there for you.
+
+            // That is how you connect the object in memory to the actual SQL server
+
+            // Now whenever you refer to CatalogContext in code, it knows which actual
+            // physical db and table it needs to go to
+
+            // Now have:
+            // Models defined
+            // Entity Framework defined
+            // Now a matter of executing it and seeing it in action
+
+            // Next time: Still have powershell commands to run
+
+
+
+---
+
+Class #11 3-7-20
+
+

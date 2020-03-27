@@ -138,6 +138,12 @@ namespace ProductCatalogApi
 
             // Discussion about what happens before Startup...Main() in Program.cs...
 
+
+
+
+
+
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

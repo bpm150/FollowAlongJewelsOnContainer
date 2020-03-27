@@ -330,4 +330,49 @@ services.AddDbContext<CatalogContext>(
 
 Class #11 3-7-20
 
+High Level of today:
+
+- CatalogSeed.cs:
+    Write CatalogSeed class and Seed() method for seeding the db with sample data
+-- CatalogSeed.Seed():
+    Starting at tables with no dependencies, if no rows exist, add a range (collection) of preconfigured model/domain objects to the table on the DbContext. Save changes on the DbContext as needed before tables with dependencies on other tables.
+-- CatalogSeed.GetPreconfiguredCatalogItems():
+    Include placeholder host/domain path for wwwroot files: "http://externalcatalogbaseurltobereplaced/api/pic/1"
+--- File Explorer / Solution Explorer (ProductCatalogApi.wwwroot):
+    For all conent to be deployed with app (ex. jewels pics, shoes pics), create and drag files to wwwroot folder in ProductCatalogApi project.
+
+
+
+- Program.cs:
+    High level:
+    Kick of building the host, wait for the db context to be ready, seed the db, then run the host.
+-- Build() the host and save a handle to it; don't Run() it yet.
+-- In a using statement (for Dispose()), CreateScope() on the Services of the host and save a handle to it.
+-- Save a handle to the ServiceProvider of the scope.
+-- For the serviceProviders, GetRequiredService<CatalogContext>(), which returns the CatalogContext (a DbContext) only when it is ready, save a handle to it.
+-- Pass the saved context to CatalogSeed.Seed(context)
+-- (The scope gets disposed at the end of the block.)
+-- Run() the host
+
+
+- Powershell:
+    View > Other Windows > Package Manager Console
+    PM> "Add-Migration Initial"
+    Convert the instructions about WHERE, WHAT and HOW to create tables (from your CatalogContext class) to SQL-like syntax using the AddMigration Powershell script. The Migrations folder appears with the Initial migration inside.
+- (Note to self:)
+    Migration(s) applied automatically to the db since Seed() calls Migrate() on the DbContext before seeding the db with data. No need to use the UpdateDatabase Powershell script.
+
+
+- View > SQL Server Object Explorer:
+    Verify that MSSQLLocalDB is there and that CatalogDb is not (from Kal's code or previous run)
+--  If MSSQLLocalDB is not there, add it.
+    Refresh list (blue circle arrow).
+    Open MSSQLLocalDB, delete CatalogDb if present.
+- VS Toolbar / Select Startup Item (green run arrow):
+    Run IIS Express (not Docker, Docker is not set up yet)
+- View > SQL Server Object Explorer:
+    Refresh list (blue circle arrow).
+    Ensure that CatalogDb is present: MSSQLLocalDB > Databases > CatalogDb
+    Open Tables, right click on a CatalogX table and View Data to verify data in db.
+
 

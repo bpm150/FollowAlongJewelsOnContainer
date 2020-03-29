@@ -154,6 +154,7 @@ namespace ProductCatalogApi
                 app.UseDeveloperExceptionPage();
             }
 
+            // This is where the routing is kicked off
             app.UseRouting();
 
             app.UseAuthorization();

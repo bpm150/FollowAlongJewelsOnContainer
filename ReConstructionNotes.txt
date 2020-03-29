@@ -376,3 +376,111 @@ High Level of today:
     Open Tables, right click on a CatalogX table and View Data to verify data in db.
 
 
+---
+
+Class #12 3-8-20
+Navigation:
+
+- Dockerfile
+- ProductCatalogApi\Controllers\PicController.cs
+- Run (green arrow) in IIS Express + web browser
+- Test in Postman
+
+
+
+
+Dockerizing your application
+Dockerize your microservice
+
+Dockerfile contains instructions to be executed on the linux vm
+
+** TODO **
+Have someone walk me through the Dockerfile with precision and clarity
+
+
+<< Where I stopped making well-formed precise notes, and switched to making rougher, "signpost-notes" >>
+
+
+PicController.cs
+
+(microservice) Controller class attributes (two):
+[Route("api/[controller]")]
+    // Route is a part of the URL
+    // App will be hosted on a port
+    // http://localhost:whateverport/restofthepathhereistheroute
+    //                              /api/pic
+
+    // Second attribute:
+    // I am an Api
+    [ApiController]
+
+Controllers inherit from ControllerBase
+    public class PicController : ControllerBase
+
+
+
+On controller class, each individual method is an api
+
+
+API/method parameter extracted from URL:
+    Attribute on method:
+        // On server-side code, we mark every api with its request type
+        [HttpGet("{id}")]
+
+                // Recall since GET request, user will not send any request body.
+        // All data will come through the URL
+
+        // When you get a GET request, whatever is in the curly braces will be
+        // extracted into a variable of name id. 
+
+Default route on a controller:
+            // But wait, it's not /api/pic/getimage/1...why not?
+        // Leaving off the /getimage means that whenever you get to
+        // the PicController by going to /api/pic, you'll automatically
+        // get routed to GetImage.
+
+
+Constructing file paths to resources in wwwroot:
+
+    Dependency Injection (DI) for getting the location of the wwwroot folder:
+                // To recieve injection, modify the contstructor of the class
+
+                // Microservices controller inject the path in which this
+                // service is deployed.
+
+                // To recieve injection, modify the contstructor of the Controller class
+
+                        public PicController(IWebHostEnvironment env) : base()
+
+                Note that you don't have to modify the declaration line of the class,
+                only its constructor
+
+                IWebHostEnvironment
+
+
+    Use Path.Combine() to construct the path to your hosted resources:
+        ("done in a cross-platform way"
+
+
+    Reading binary files and serving them back to the user:
+        System.IO.File.ReadAllBytes()
+
+                    // Must fully resolve File class name since there is a name collision with base class ControllerBase
+
+    Call ControllerBase.File(Byte[], String) to return a FileContentResult
+            // Inheritance
+            // Object -> ActionResult -> FileResult -> FileContentResult
+            // Also ActionResult : IActionResult
+            // Therefore, FileContentResult implements IActionResult
+            // (is convertable to that type)
+
+
+
+- Test API IIS/Browser
+    // Go to the browser window that opened and modify the url
+    // http://localhost:52750/api/pic/1
+
+- Test in Postman
+
+
+

@@ -484,3 +484,163 @@ Constructing file paths to resources in wwwroot:
 
 
 
+---
+
+Class #13 3-14-20
+Navigation:
+
+- Controllers\CatalogController.cs
+- appsettings.json (add ExternalCatalog)
+- ViewModel\PaginatedItemsViewModel.cs
+
+
+- Add CatalogController
+First api that is meaningful to containerize
+
+Of note for Kal starting with the PicController as the first controller...
+it only relied on the file system (injected Iwebhostenv)
+did not need a db connection
+
+
+
+/api/catalog
+
+
+- Inject CatalogContext context into CatalogController controller
+
+
+QUESTION:
+Could have done DI with the CatalogSeed class instead of passing the context to the Seed method directly?
+Is it only done by direct passing because it is so convenient to do so?
+The method that tells us it is ready returns exactly the reference we need, so why not simply pass it?
+
+QUESTION:
+Are there other use cases for looking up the db context as we did in Main, or is it always preferred to use DI?
+
+
+- Query database table(s) to get needed data
+
+
++Almost all apis should be async (all apis that are called from the front end)
+        // Async: Don't want to block your webui.
+        // Don't want to block your front end from accessing your api back end.
+
+
+
++ Three ways to accept route params:
+    * from uri
+        (by [HttpGet("{id}")] as we did with PicController.GetImage)
+        (or by [Route("[action]/{pageIndex}/{pageSize}")] as we *nearly* did with CatalogController.Items)
+    * from query (the old way)
+    http://jsdfkjdslkj/?k=v&k=v
+    * From body
+    we will do when talking about post
+
+
+- Paginating data from a database (instead of returning all of it):
+
+Given a page size and page number/index,
+return the appropriate set of items to the caller
+
+(UI logic must mimic this pattern)
+
+Skip and take:
+    How many records to skip
+    How many records to take
+
+
+
+(Always provide defaults for URL params to prevent breaking.)
+
+
+- Items api done with [FromQuery] http://jsdfkjdslkj/?k=v&k=v
+
+
+
+- Recall IActionResult
+    ? Was there a Task<> around IActionResult of GetImage?
+    Is there a 1:1 correlation between a method being async and needing Task<> around its return type?
+    Is it Task's job to run the (remind me name of method) on the IActionResult return object?
+    Is Task<> only ever used with IActionResult?
+    Is IActionResult only ever used with Task<>?
+
+    Ok() asp.net method returns a Task<IActionResult>?
+
+
+    ? IActionResult represents an api return object whose value is immediately avail upon return (as with PicController), that is, from a non-async (synchronous) api.
+
+    ? Task<IActionResult> represents an api return object whose value may not be immediately avail upon return (as with Item), that is, from an async api.
+        QUESTION: How does the caller know when the value is ready?
+
+
+- Test in Postman
+    Create collection to save queries
+            // Remember to make sure that the correct request type is selected:
+            // GET, POST, etc.
+
+
+- appsettings.json: Fix the pic url
+    Did not seed full path into pic urls
+    Port number may differ also docker
+
+    Inject IConfiguration into CatalogController class (via constructor)
+
+    Then replace all of the placeholder text in the pic urls with the correct path:
+    Set the PictureUrl property on each item with the value looked up in appsettings.json by key/value lookup
+
+                // When an object (_config) refers to the IConfigration object
+            // that is read in from the appsettings.json
+            // Treat the object as a dictionary and use array subscript notation
+            // to look up the value by key:
+            // _config["Key"]
+
+
+    + Port number of the container hosting the pic files is fixed as of the time of deployment
+
+
++ Never accept port numbers as params, big security risk
+
+
++ CatalogController api is one api that calls another (PicController)
+QUESTION: CatalogController doesn't directly call PicController, though, right?
+It converts the url, but the PicController is queried by the user of CatalogController?
+
+
+- help out the client
+    also give more info about data that you are sending
+    things that the view needs to know in order to be able to render properly
+        how do I know how many items I really got?
+        how many are left?
+        how does ui know?
+-- Revise Items api to return a PaginatedItemsViewModel<CatalogItem> (instead of a ...)
+Make a viewmodel called PaginatedItemsViewModel<>
+Generic so can re-use the paginated feature for other data
++ no difference between ViewModel in MVC and ViewModel in MVVM
+---What is all the data that the page needs?
+    PageIndex
+    PageSize
+    ItemCount
+    Data (collection of items)
+
+
+Now, Items()
+returns a wrapped PaginatedItemsViewModel<CatalogItem> instead of a wrapped List<ViewItem>
+Wrapper is an OkObjectResult
+
+QUESTION:
+In this example of MVC,
+Instead of the ViewModel querying the model for the data it needs, the controller returns a ViewModel to the view?
+
+
++ If number of records won't fit in a long...that's millions of records
+    Better to consider partitioning the data
+    Archiving old data, keeping the data clean.
+
+
++ When you query the db, you need to await an async method
+
+
+- Test in Postman again
+ (See PaginatedViewModel working)
+
+ 

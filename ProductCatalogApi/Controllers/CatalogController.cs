@@ -80,13 +80,20 @@ namespace ProductCatalogApi.Controllers
             // Then visual studio will know how to write the function prototype
             // for you
 
+            // Example class for Ainur
+            //var count = await EntityFrameworkQueryableExtensions.LongCountAsync<CatalogItem>(_context.CatalogItems);
+
+
             var viewModel = new PaginatedItemsViewModel<CatalogItem>
             {
                 PageIndex = pageIndex,
                 PageSize = pageSize,
 
-                // We have to query the database again 
-                ItemCount = await _context.CatalogItems.LongCountAsync(),
+
+
+            // We have to query the database again 
+            ItemCount = await _context.CatalogItems.LongCountAsync(),
+
                 //EntityFrameworkQueryableExtensions.LongCountAsync<TSource>(this IQueryable<TSource>, CancellationToken),
                 // So:
                 // IQueryable<CatalogItem>.LongCountAsync<CatalogItem>()

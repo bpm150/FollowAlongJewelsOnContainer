@@ -72,6 +72,7 @@ namespace ProductCatalogApi
             // Means that Startup will create an instance of CatalogContext
             // This is CatalogContext instance will connect to your db
 
+
             // In memory, Startup creates an instance of CatalogContext
             // that is now going to be connected to the physical db
 

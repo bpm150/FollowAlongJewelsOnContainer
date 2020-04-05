@@ -60,7 +60,7 @@ namespace ProductCatalogApi.Data
             // Populate the tables with data
             if (!context.CatalogBrands.Any())
             // Any is a LINQ query...are there any records?
-            // If there are no rows in the table
+            // If there are no rows in the table    
             {
                 // Only then do we seed the table with data
 

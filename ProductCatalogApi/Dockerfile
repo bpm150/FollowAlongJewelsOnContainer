@@ -4,6 +4,10 @@
 #See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
 #Class #12 3-8-20
+
+# This is the Dockerfile for the ProductCatalogApi
+# describes how to make the image (the "iso," if you will)
+#Later (on Class #14 3-15-20, will also need to make the project dockerizable)
 #
 #docker container is an immutable vm
 #these child vms running on a host system
